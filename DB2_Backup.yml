@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: 2010-09-09 
+Description: |
+  Creating SSM automation document for running DB2 backups to be stored on AWS S3
+Resources:
+  SsmDocumentForBackup:
+    Type: AWS::SSM::Document
+    Properties:
+      Content:
+        schemaVersion: '2.2'
+        description: Run DB2 data backup.
+        parameters:
+          BackupType:
+            type: String
+            description: Please specify the type of data backup - OFFLINE,ONLINE, INCREMENTAL, DELTA. 
+            default: ONLINE
+            allowedValues: 
+              - OFFLINE
+              - ONLINE
+              - INCREMENTAL 
+              - DELTA
+
+        mainSteps:
+          - action: aws:runShellScript
+            name: runShellScript
+            inputs:
+              timeoutSeconds: 3600
+              maxAttempts: 3
+              runCommand:
+                - |
+                  #!/bin/bash
+                  bkp_type={{BackupType}}
+                  user=`grep -i db2 /etc/passwd |uniq | cut -f1 -d ":"` 
+                  status=`su $user -c "db2pd - |grep -i active|wc -l"` 
+                  sid=`su $user -c "env |grep -i DB2DBDFT | cut -f2 -d "=""` 
+                  if [ $status == 1 ]
+                    then
+                      bkp_date=`date '+%Y%m%d'`
+                      alias=`su $user -c "db2 list storage access |grep -i alias |cut -f2 -d "=""`
+                    if [ $bkp_type == "OFFLINE" ]
+                    then
+                      su $user -c "db2 backup db $sid to DB2REMOTE://$alias//DB2/$sid/$bkp_type/$bkp_date compress without prompting" >> /db2/backup_script.log
+                    elif [ $bkp_type == "ONLINE" ] 
+                    then
+                      su $user -c "db2 BACKUP DATABASE $sid ONLINE TO DB2REMOTE://$alias//DB2/$sid/$bkp_type/$bkp_timestamp compress include logs" >> /db2/backup_script.log
+                    elif [ $bkp_type == "INCREMENTAL" ] 
+                    then
+                      su $user -c "db2 BACKUP DATABASE $sid ONLINE INCREMENTAL TO DB2REMOTE://$alias//DB2/$sid/$bkp_type/$bkp_timestamp compress include logs" >> /db2/backup_script.log
+                    elif [ $bkp_type == "DELTA" ]
+                    then
+                      su $user -c "db2 BACKUP DATABASE $sid ONLINE INCREMENTAL DELTA TO DB2REMOTE://$alias//DB2/$sid/$bkp_type/$bkp_timestamp compress include logs" >> /db2/backup_script.log
+                    fi
+                  elif [ $status == 0]
+                  then
+                    echo "DB2 is not running, please start database and try again.... exiting" >> /db2/backup_script.log
+                    exit 8 
+                  fi
+                  exit 8
+      DocumentType: Command
+      Name: Db2BackuptoS3
+Outputs:
+  SsmDocumentName:
+    Description: SSM document name
+    Value: !Ref SsmDocumentForBackup
