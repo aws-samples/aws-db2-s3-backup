@@ -1,5 +1,5 @@
 {
-    "Version": "2012-10-17",
+"Version": "2012-10-17",
     "Statement": [
         {
             "Sid": "ListObjectsInBucket",
@@ -17,6 +17,11 @@
                 "s3:GetObject",
                 "s3:DeleteObject"
             ],
+            "Condition": {
+             "Bool": {
+              "aws:SecureTransport": "true"
+              }
+            },
             "Resource": [
                 "arn:aws:s3:::db2_backup_demo/*"
             ]
