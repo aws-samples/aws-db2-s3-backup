@@ -25,6 +25,17 @@
             "Resource": [
                 "arn:aws:s3:::db2_backup_demo/*"
             ]
+        },
+          {
+            "Sid": "DenyUnEncryptedObjectUploads",
+            "Effect": "Deny",
+            "Action": "s3:PutObject",
+            "Resource": "arn:aws:s3:::db2_backup_demo/*",
+            "Condition": {
+                "Null": {
+                    "s3:x-amz-server-side-encryption": "true"
+                }
+            }    
         }
     ]
 }
