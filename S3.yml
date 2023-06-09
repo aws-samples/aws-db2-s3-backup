@@ -14,10 +14,14 @@ Resources:
     Type: "AWS::S3::Bucket"
     Properties:
       AccessControl: LogDeliveryWrite
+      OwnershipControls:
+          Rules:
+            - ObjectOwnership: ObjectWriter
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
+
             
   MainBucket:
     Type: "AWS::S3::Bucket"
