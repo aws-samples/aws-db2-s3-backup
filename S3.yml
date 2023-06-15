@@ -13,7 +13,14 @@ Resources:
   AccessLogBucket:
     Type: "AWS::S3::Bucket"
     Properties:
+      VersioningConfiguration:
+        Status: Enabled
       AccessControl: LogDeliveryWrite
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
       OwnershipControls:
           Rules:
             - ObjectOwnership: ObjectWriter
